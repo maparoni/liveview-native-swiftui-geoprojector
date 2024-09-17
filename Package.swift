@@ -1,21 +1,32 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 5.10
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
-    name: "LiveViewNativeGeoProjector",
-    products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "LiveViewNativeGeoProjector",
-            targets: ["LiveViewNativeGeoProjector"]),
-    ],
-    targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
-        .target(
-            name: "LiveViewNativeGeoProjector"),
-
-    ]
+  name: "LiveViewNativeGeoProjector",
+  platforms: [
+    .iOS("17.0"),
+    .macOS("13.0"),
+  ],
+  products: [
+    .library(
+      name: "LiveViewNativeGeoProjector",
+      targets: ["LiveViewNativeGeoProjector"]
+    ),
+  ],
+  dependencies: [
+    .package(url: "https://github.com/liveview-native/liveview-client-swiftui.git", from: "0.3.0"),
+    .package(url: "https://github.com/maparoni/GeoProjector.git", branch: "main"),
+  ],
+  targets: [
+    .target(
+      name: "LiveViewNativeGeoProjector",
+      dependencies: [
+        .product(name: "LiveViewNative", package: "liveview-client-swiftui"),
+        .product(name: "GeoDrawer", package: "GeoProjector"),
+      ]
+    ),
+    
+  ]
 )
