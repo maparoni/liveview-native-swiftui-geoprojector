@@ -1,5 +1,5 @@
 {
-  "originHash" : "c852dadf2040c4fcf132d50bfe54337b25aa34d53df196099961306fd3b74c45",
+  "originHash" : "88eda6c7705bdfb8ca3c331a1c3017a51bd8ea1d7e10d6572ffbbeea33228165",
   "pins" : [
     {
       "identity" : "geojsonkit",
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/maparoni/GeoProjector.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "471e8199b3c114ad4cd96e9cb82b8c1baaecc42e"
+        "revision" : "d677644c7b6b60fe3ad4f4251e009c240f296506",
+        "version" : "0.2.0"
       }
     },
     {

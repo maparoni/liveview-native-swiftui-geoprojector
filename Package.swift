@@ -17,7 +17,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/liveview-native/liveview-client-swiftui.git", from: "0.3.0"),
-    .package(url: "https://github.com/maparoni/GeoProjector.git", branch: "main"),
+    .package(url: "https://github.com/maparoni/GeoProjector.git", from: "0.2.0"),
   ],
   targets: [
     .target(
