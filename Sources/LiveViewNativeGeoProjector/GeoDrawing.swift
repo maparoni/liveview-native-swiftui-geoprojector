@@ -66,6 +66,9 @@ public struct GeoDrawing<Root: RootRegistry>: View {
     
     @Published var loadError: Error? = nil
     
+    private var cacheTask: Task<Void, Never>?
+    private var fetchTask: Task<Void, Never>?
+    
     var mapBackground: NSUIColor { (colorScheme == .dark) ? #colorLiteral(red: 0.1019607843, green: 0.168627451, blue: 0.3803921569, alpha: 1) : #colorLiteral(red: 0.7411764706, green: 0.9098039216, blue: 0.9764705882, alpha: 1) }
     var mapOutline: NSUIColor    { (colorScheme == .dark) ? #colorLiteral(red: 0.1734354066, green: 0.2471963301, blue: 0.4649964373, alpha: 1) : #colorLiteral(red: 0.9294117647, green: 0.9254901961, blue: 0.9215686275, alpha: 1) }
     var mapBackdrop: NSUIColor   { (colorScheme == .dark) ? #colorLiteral(red: 0.1208299026, green: 0.1530924439, blue: 0.2066171169, alpha: 1) : #colorLiteral(red: 0.9689704984, green: 0.9648820153, blue: 0.9607935322, alpha: 1) }
@@ -94,40 +97,72 @@ public struct GeoDrawing<Root: RootRegistry>: View {
       
       continentContent = GeoDrawer.Content.content(
         for: countries,
-        color: foreground.cgColor,
-        polygonStroke: (foregroundStroke.cgColor, width: 0.5)
+        style: .init(
+          color: foreground.cgColor,
+          polygonStroke: (foregroundStroke.cgColor, width: 0.5)
+        )
       )
     }
     
     func didAppear() {
-#warning("TODO: Only do this once, not for each drawing.")
-      self.countries = try? GeoDrawer.Content.countries()
+      Task {
+        self.countries = try? await GeoDrawingContentManager.shared.provider.continents()
+      }
     }
     
     func load(_ urlString: String?) {
       guard let url = urlString.flatMap(URL.init(string:)) else { return }
       
-      Task {
+      cacheTask?.cancel()
+      cacheTask = Task {
         do {
-          let (data, _) = try await URLSession.shared.data(from: url)
-          let geoJSON = try GeoJSON(data: data)
+          let cached = try await GeoDrawingContentManager.shared.provider.cachedContent(url: url)
+          try Task.checkCancellation()
+          if let cached {
+            self.show(cached)
+          }
+        } catch {
+          return // all safe to ignore; errors only shown when fetching
+        }
+      }
+
+      fetchTask?.cancel()
+      fetchTask = Task {
+        do {
+          let fresh = try await GeoDrawingContentManager.shared.provider.fetchContent(url: url)
+          try Task.checkCancellation()
           
-          if let provided = geoJSON.boundingBox {
-            self.boundingBox = provided
-          } else {
-            self.boundingBox = .suggestedBox(for: geoJSON.positions)
+          if let fresh {
+            // Fresh content preferred over cached one
+            cacheTask?.cancel()
+            cacheTask = nil
+            
+            self.show(fresh)
           }
           
-          self.mapContent = GeoDrawer.Content.content(
-            for: geoJSON,
-            color: NSUIColor.red.cgColor
-          )
-          
-          
+        } catch is CancellationError {
+          return // ignore silently
         } catch {
           self.loadError = error
         }
       }
+    }
+    
+    private func show(_ geoJSON: GeoJSON) {
+      if let provided = geoJSON.boundingBox {
+        self.boundingBox = provided
+      } else {
+        self.boundingBox = .suggestedBox(for: geoJSON.positions)
+      }
+      
+      self.mapContent = GeoDrawer.Content.content(
+        for: geoJSON,
+        style: .init(
+          color: NSUIColor.red.cgColor,
+          pointRadius: 3,
+          pointAlpha: 0.6
+        )
+      )
     }
   }
 }
